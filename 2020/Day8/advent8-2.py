@@ -2,7 +2,6 @@
 
 import sys
 import re
-import copy
 
 if len(sys.argv) != 2:
     print("Please provide input.")
