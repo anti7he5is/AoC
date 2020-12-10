@@ -37,7 +37,10 @@ for index in range(0, len(input) - buflen) :
 # Find contiguous set
 for i in range(0,nextVal):
     for j in range(i+1, nextVal):
-        if sum(input[i:j]) == value:
+        rangeSum = sum(input[i:j])
+        if rangeSum > value:
+            break
+        if rangeSum == value:
             print("Found set:")
             print(input[i:j])
             minVal = min(input[i:j])
