@@ -24,27 +24,12 @@ speak = start[head]
 while head < rounds:
     consider = speak
     
-    #print("hist")
-    #print(history)
-    #print("Head: %i, Consider: %i" % (head, consider))
-
     if consider in history:
         speak = head - history[consider]
         history[consider] = head
     else:
         history[consider] = head
         speak = 0
-    #print("Round: %i - Spoken: %i" % (head, speak))
-    #print("----")
     head += 1
-    
-    # Get the position of the last spoken value in history
-    # if it has been spoken before, calculate the distance
-    # if it has not been spoken, add it with the cur head
-    # 
 
-    # update the head position
-    
-#print(history)
 print(speak)
- 
