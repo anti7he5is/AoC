@@ -1,61 +1,80 @@
 #!/usr/bin/python3
 
 import sys
+from dataclasses import dataclass
+
+@dataclass
+class Rule:
+    desc: str
+    minA: int
+    maxA: int
+    minB: int
+    maxB: int
 
 if len(sys.argv) != 4:
     print("Please provide input.")
     print("Usage: %s rules tickets yourTicket" % sys.argv[0])
     sys.exit(1)
 
-rules = [[]]
 
-with open(sys.argv[1]) as f:
-    for line in f:
-        stripped = line.strip("\n")
-        rule = stripped.split(": ")
-        if rules == [[]]:
-            rules[0] = [rule[0], rule[1]]
-        else:
-            rules.append([rule[0], rule[1]])
+def parseRules() -> list:
+    cRules = []
+    with open(sys.argv[1]) as f:
+        for line in f:
+            stripped = line.strip("\n")
+            rule = stripped.split(": ")
 
-validRanges = list()
+            validRange = rule[1].split(" or ")
+    
+            minA, maxA = validRange[0].split("-")
+            minB, maxB = validRange[1].split("-")
 
-for rule in rules:
-    validRange = rule[1].split(" or ")
-    for rangePart in validRange:
-        thisRange = rangePart.split("-")
-        minVal = int(thisRange[0])
-        maxVal = int(thisRange[1])
-        validRanges.append((minVal,maxVal))
+            if cRules == []:
+                cRules = [Rule(rule[0], int(minA), int(maxA), int(minB), int(maxB))]
+            else:
+                cRules.append(Rule(rule[0], int(minA), int(maxA), int(minB), int(maxB)))
+    return cRules
 
-tickets = [[]]
-errorSum = 0
+rules = parseRules()
 
-with open(sys.argv[2]) as f:
-    for line in f:
-        thisTicket = list()
-        validTicket = True
-        values = line.strip("\n").split(",")
+
+def parseTickets() -> list:
+    tickets = [[]]
+    errorSum = 0
+
+    with open(sys.argv[2]) as f:
+        for line in f:
+            thisTicket = list()
+            validTicket = True
+            values = line.strip("\n").split(",")
         
-        for value in values:
-            validField = False
+            for value in values:
+                validField = False
             
-            for thisRange in validRanges:
-                if int(value) >= thisRange[0] and int(value) <= thisRange[1]:
-                    validField = True
-                    break
-            if validField == False:
-                validTicket = False
-                errorSum += int(value)
-            else:
-                thisTicket.append(int(value))
-        if validTicket:
-            if tickets == [[]]:
-                tickets[0] = thisTicket
-            else:
-                tickets.append(thisTicket)
+                for thisRange in rules:
+                    inA = thisRange.minA <= int(value) <= thisRange.maxA
+                    inB = thisRange.minB <= int(value) <= thisRange.maxB
+                    if (inA or inB):
+                        validField = True
+                        break
+                if validField == False:
+                    validTicket = False
+                    errorSum += int(value)
+                else:
+                    thisTicket.append(int(value))
+            if validTicket:
+                if tickets == [[]]:
+                    tickets[0] = thisTicket
+                else:
+                    tickets.append(thisTicket)
+    
+    print(errorSum)
+    return tickets
+
+tickets = parseTickets()
 
 myTicket = list()
+
 with open(sys.argv[3]) as f:
     for line in f.readlines():
         values = line.strip("\n").split(",")
@@ -64,12 +83,9 @@ with open(sys.argv[3]) as f:
 
 tickets.append(myTicket)
 
-#for ticket in tickets:
-#    print(ticket)
-
 numberOfFields = len(myTicket)
 numberOfTickets = len(tickets)
-numberOfRules = int(len(validRanges)/2)
+numberOfRules = len(rules)
 
 rulesValidForField = list()
 
@@ -80,26 +96,25 @@ for x in range(0, numberOfFields):
         fieldIsValidForThisRule = True
         for y in range(0, numberOfTickets):
             value = tickets[y][x]
-            minA, maxA = validRanges[2*r]
-            minB, maxB = validRanges[2*r+1]    
-        
-            inA = (value >= minA and value <= maxA)
-            inB = (value >= minB and value <= maxB)
+            #minA, maxA = validRanges[2*r]
+            #minB, maxB = validRanges[2*r+1]    
+            minA, minB = rules[r].minA, rules[r].minB
+            maxA, maxB = rules[r].maxA, rules[r].maxB
+
+            inA = ( minA <= value <= maxA)
+            inB = ( minB <= value <= maxB)
 
             valid = (inA or inB)
-            #print("%i-%i (%s) or %i-%i (%s) [%i] -> %s" % (minA, maxA, inA, minB, maxB, inB, value, fieldIsValidForThisRule))
 
             if not valid:
                 fieldIsValidForThisRule = False
         if fieldIsValidForThisRule:
             rulesValidForField[x].append(r)
 
-
-numFields = 20
+numFields = len(myTicket)
 solved = False
 
-sortedTicket = list()
-sortedTicket.append(myTicket)
+confirmedFields = []
 
 while not solved:
     confirmedCount = 0
@@ -117,18 +132,17 @@ while not solved:
     if confirmedCount == numFields:
         solved = True
 
-for i in range(0, numFields):
-    index = rulesValidForField[i][0]
-    sortedTicket[0][index] = myTicket[i]
-    
-#print(rules)
-#print(validRanges)
-#print(sortedTicket)
-
-
+sorted = []
 departed = 1
-for i in range(0, 6):
-    print(sortedTicket[0][i])
-    departed *= sortedTicket[0][i]
+
+for i in range(0, len(myTicket)):
+    for j in range(0, len(rulesValidForField)):
+        vr = rulesValidForField[j]
+        if i == vr[0]:
+            sorted.append(myTicket[j])
+            if i < 6:
+                departed *= myTicket[j]
+            break
 
 print(departed)
+
